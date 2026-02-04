@@ -100,6 +100,26 @@ class CreditScoringModel:
             {"feature": "credit_history_length", "impact": 0.20, "direction": "positive"},
             {"feature": "existing_debt", "impact": -0.15, "direction": "negative"},
         ]
+    def get_model_info(self) -> dict:
+        """Return model metadata for compliance (Article 14)."""
+        return {
+            "model_name": "Credit Scoring Model",
+            "version": self.version,
+            "risk_classification": "HIGH (Annex III)",
+            "intended_use": "Credit risk assessment for loans up to €50,000",
+            "human_oversight": "Required for amounts > €10,000",
+            "data_used": [
+                "Income data",
+                "Employment history",
+                "Credit history",
+                "Debt levels",
+                "Transaction history"
+            ],
+            "limitations": [
+                "Not suitable for loans > €50,000",
+                "May not perform well on non-standard financial profiles"
+            ]
+        }
 
 
 if __name__ == "__main__":
