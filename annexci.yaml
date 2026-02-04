@@ -1,0 +1,20 @@
+# AnnexCI Configuration
+system:
+  id: sys-001  # Will be assigned by platform
+  name: "[YOUR SYSTEM NAME]"
+  version: "1.0.0"
+  
+client:
+  id: acme
+  name: "Acme Corp"
+  
+compliance:
+  risk_level: high
+  articles:
+    - 9   # Risk Management
+    - 10  # Data Governance
+    - 11  # Technical Documentation
+    - 12  # Record Keeping
+    - 13  # Transparency
+    - 14  # Human Oversight
+    - 15  # Accuracy, Robustness, Cybersecurity
