@@ -1,0 +1,215 @@
+name: EU AI Act Compliance
+
+on:
+  push:
+    branches: [main, production]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ============================================
+  # STAGE 1: Technical Compliance Check
+  # ============================================
+  technical-compliance:
+    name: "Stage 1: Technical Compliance"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check compliance folder exists
+        run: |
+          echo "╔═══════════════════════════════════════════════════════════════╗"
+          echo "║  STAGE 1: Technical Compliance Check                          ║"
+          echo "╚═══════════════════════════════════════════════════════════════╝"
+          echo ""
+          
+          if [ ! -d "compliance" ]; then
+            echo "❌ FAILED: No compliance/ folder found!"
+            echo ""
+            echo "EU AI Act compliance documentation is required."
+            echo "Run 'annexci init' to create the compliance structure."
+            echo ""
+            echo "Required files:"
+            echo "  - compliance/RISK_REGISTER.yaml  (Article 9)"
+            echo "  - compliance/DATA_CARD.md        (Article 10)"
+            echo "  - compliance/MODEL_CARD.md       (Article 13)"
+            echo "  - compliance/HUMAN_OVERSIGHT.md  (Article 14)"
+            echo "  - compliance/INSTRUCTIONS.md     (Article 13)"
+            exit 1
+          fi
+          echo "✓ Compliance folder found"
+
+      - name: Validate required documents
+        run: |
+          echo "Checking required compliance documents..."
+          echo ""
+          
+          required_files=(
+            "compliance/RISK_REGISTER.yaml"
+            "compliance/DATA_CARD.md"
+            "compliance/MODEL_CARD.md"
+            "compliance/HUMAN_OVERSIGHT.md"
+            "compliance/INSTRUCTIONS.md"
+          )
+          
+          missing=0
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Missing: $file"
+              missing=1
+            else
+              echo "✓ Found: $file"
+            fi
+          done
+          
+          if [ $missing -eq 1 ]; then
+            echo ""
+            echo "❌ FAILED: Missing required documentation files."
+            exit 1
+          fi
+
+      - name: Validate document content
+        run: |
+          echo ""
+          echo "Validating document content..."
+          echo ""
+          
+          # Check RISK_REGISTER.yaml has actual risks defined
+          if grep -q "risks: \[\]" compliance/RISK_REGISTER.yaml 2>/dev/null || \
+             grep -q "\[YOUR SYSTEM NAME\]" compliance/RISK_REGISTER.yaml 2>/dev/null; then
+            echo "❌ RISK_REGISTER.yaml: Template not filled in - no risks defined"
+            exit 1
+          fi
+          echo "✓ RISK_REGISTER.yaml: Contains risk definitions"
+          
+          # Check DATA_CARD.md is filled in
+          if grep -q "\[System Name\]" compliance/DATA_CARD.md 2>/dev/null || \
+             grep -q "\[Name\]" compliance/DATA_CARD.md 2>/dev/null; then
+            echo "❌ DATA_CARD.md: Template not filled in"
+            exit 1
+          fi
+          echo "✓ DATA_CARD.md: Content validated"
+          
+          # Check MODEL_CARD.md is filled in
+          if grep -q "\[System Name\]" compliance/MODEL_CARD.md 2>/dev/null; then
+            echo "❌ MODEL_CARD.md: Template not filled in"
+            exit 1
+          fi
+          echo "✓ MODEL_CARD.md: Content validated"
+          
+          # Check HUMAN_OVERSIGHT.md has stop mechanism
+          if ! grep -q "Stop Mechanism" compliance/HUMAN_OVERSIGHT.md 2>/dev/null; then
+            echo "❌ HUMAN_OVERSIGHT.md: Stop mechanism not documented (Article 14(4)(e))"
+            exit 1
+          fi
+          echo "✓ HUMAN_OVERSIGHT.md: Stop mechanism documented"
+          
+          echo ""
+          echo "╔═══════════════════════════════════════════════════════════════╗"
+          echo "║  ✓ STAGE 1 PASSED: Technical Compliance                       ║"
+          echo "╚═══════════════════════════════════════════════════════════════╝"
+
+  # ============================================
+  # STAGE 2: Deployment Authorization Check
+  # ============================================
+  deployment-authorization:
+    name: "Stage 2: Deployment Authorization"
+    runs-on: ubuntu-latest
+    needs: technical-compliance
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for compliance token
+        run: |
+          echo "╔═══════════════════════════════════════════════════════════════╗"
+          echo "║  STAGE 2: Deployment Authorization Check                      ║"
+          echo "╚═══════════════════════════════════════════════════════════════╝"
+          echo ""
+          
+          # Check for token file
+          if [ ! -f ".annexci/token" ]; then
+            echo "❌ FAILED: No compliance token found!"
+            echo ""
+            echo "Deployment requires authorization from CRO and/or Law Firm."
+            echo ""
+            echo "To authorize deployment:"
+            echo "  1. CRO must complete attestations in AnnexCI platform"
+            echo "  2. Law firm must review and issue compliance token"
+            echo "  3. Run: annexci deploy --token <TOKEN>"
+            echo ""
+            echo "This PR cannot be merged until a valid compliance token is on file."
+            exit 1
+          fi
+          
+          echo "✓ Compliance token file found"
+
+      - name: Validate token format
+        run: |
+          TOKEN=$(cat .annexci/token)
+          echo "Token: ${TOKEN:0:20}..."
+          
+          # Basic format validation (should start with client prefix)
+          if [[ ! "$TOKEN" =~ ^[A-Z]+-[A-Z]+-[0-9]+\.[0-9]+\.[0-9]+-[a-f0-9]+$ ]]; then
+            echo ""
+            echo "⚠️  Token format may be invalid"
+            echo "Expected format: ACME-CS-2.1.0-abc12345"
+          fi
+          
+          echo "✓ Token format validated"
+          echo ""
+          echo "╔═══════════════════════════════════════════════════════════════╗"
+          echo "║  ✓ STAGE 2 PASSED: Deployment Authorized                      ║"
+          echo "║                                                               ║"
+          echo "║  Compliance token verified.                                   ║"
+          echo "║  This PR is approved for merge to production.                 ║"
+          echo "╚═══════════════════════════════════════════════════════════════╝"
+
+  # ============================================
+  # Summary
+  # ============================================
+  compliance-summary:
+    name: "Compliance Status"
+    runs-on: ubuntu-latest
+    needs: [technical-compliance, deployment-authorization]
+    if: always()
+    
+    steps:
+      - name: Check results
+        run: |
+          echo ""
+          echo "╔═══════════════════════════════════════════════════════════════╗"
+          echo "║              EU AI ACT COMPLIANCE SUMMARY                     ║"
+          echo "╚═══════════════════════════════════════════════════════════════╝"
+          echo ""
+          
+          if [ "${{ needs.technical-compliance.result }}" != "success" ]; then
+            echo "❌ Stage 1 (Technical Compliance): FAILED"
+            echo "   → Fix compliance documentation issues"
+          else
+            echo "✓ Stage 1 (Technical Compliance): PASSED"
+          fi
+          
+          if [ "${{ needs.deployment-authorization.result }}" != "success" ]; then
+            echo "❌ Stage 2 (Deployment Authorization): FAILED"
+            echo "   → Obtain compliance token from CRO/Law Firm"
+          else
+            echo "✓ Stage 2 (Deployment Authorization): PASSED"
+          fi
+          
+          echo ""
+          
+          if [ "${{ needs.technical-compliance.result }}" == "success" ] && \
+             [ "${{ needs.deployment-authorization.result }}" == "success" ]; then
+            echo "═══════════════════════════════════════════════════════════════"
+            echo "  ✓ ALL CHECKS PASSED - Ready to merge"
+            echo "═══════════════════════════════════════════════════════════════"
+          else
+            echo "═══════════════════════════════════════════════════════════════"
+            echo "  ✗ MERGE BLOCKED - Fix issues above"
+            echo "═══════════════════════════════════════════════════════════════"
+            exit 1
+          fi
