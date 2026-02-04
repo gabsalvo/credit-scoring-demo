@@ -1,0 +1,69 @@
+# Risk Register for Credit Scoring Model v2.1.0
+# EU AI Act Article 9 Compliance
+
+system:
+  name: Credit Scoring Model
+  version: 2.1.0
+  risk_classification: high
+  annex_iii_category: "5(b) - Credit scoring"
+
+risks:
+  - id: RISK-001
+    name: Demographic Bias
+    description: Model may exhibit disparate impact across protected characteristics
+    likelihood: medium
+    impact: high
+    risk_level: high
+    mitigation:
+      - Regular bias audits using demographic parity metrics
+      - Quarterly review of approval rates by demographic groups
+      - Automated alerts when disparity exceeds 10%
+    owner: M. Silva (CRO)
+    review_date: 2026-04-01
+
+  - id: RISK-002
+    name: Data Quality Degradation
+    description: Input data quality may degrade over time affecting model accuracy
+    likelihood: medium
+    impact: medium
+    risk_level: medium
+    mitigation:
+      - Real-time data quality monitoring
+      - Automated alerts for schema violations
+      - Monthly data quality reports
+    owner: Data Engineering Team
+    review_date: 2026-03-01
+
+  - id: RISK-003
+    name: Model Drift
+    description: Model performance may degrade as population characteristics change
+    likelihood: high
+    impact: high
+    risk_level: high
+    mitigation:
+      - Weekly performance monitoring dashboards
+      - Automated retraining triggers when AUC drops below 0.75
+      - Quarterly manual review of model decisions
+    owner: ML Engineering Team
+    review_date: 2026-02-15
+
+  - id: RISK-004
+    name: Transaction History Privacy
+    description: New transaction_history input may expose sensitive financial patterns
+    likelihood: low
+    impact: high
+    risk_level: medium
+    mitigation:
+      - Data minimization - only aggregate transaction features used
+      - Encryption at rest and in transit
+      - Access logging and audit trails
+    owner: Security Team
+    review_date: 2026-03-01
+
+residual_risk_assessment:
+  overall_level: medium
+  justification: >
+    With mitigations in place, residual risk is acceptable. Continuous monitoring
+    and quarterly reviews ensure risks remain within tolerance.
+  approved_by: M. Silva
+  approved_date: 2026-01-29
